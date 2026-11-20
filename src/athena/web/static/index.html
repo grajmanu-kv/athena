@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Athena · epistemic test harness</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%232a4d8f%27/%3E%3Ctext x=%2716%27 y=%2724%27 font-size=%2722%27 text-anchor=%27middle%27 fill=%27white%27 font-family=%27sans-serif%27 font-weight=%27bold%27%3E%CE%91%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo" aria-hidden="true">Α</span>
+    <div><h1>Athena</h1><p>Epistemic quality of an LLM response</p></div></div>
+  <div class="health" id="health" role="status" aria-live="polite">checking server…</div>
+</header>
+
+<main class="grid">
+  <!-- ===================== INPUT ===================== -->
+  <form id="form" class="panel" autocomplete="off" novalidate>
+    <div class="row between">
+      <h2>Input</h2>
+      <label class="inline">Example
+        <select id="preset"><option value="">— choose —</option></select>
+      </label>
+    </div>
+
+    <label for="query">Query <span class="hint">the prompt that was sent to the LLM</span></label>
+    <textarea id="query" rows="6" required placeholder="Paste the prompt / system + user instructions…"></textarea>
+
+    <label for="response">Response <span class="hint">the LLM answer to assess</span></label>
+    <textarea id="response" rows="9" required placeholder="Paste the LLM response…"></textarea>
+
+    <fieldset>
+      <legend>Risk context <span class="hint">sets how strict the gate is</span></legend>
+      <label for="goal">Goal <span class="hint">what the answer is used for</span></label>
+      <input id="goal" type="text" required placeholder="e.g. Brief the duty officer">
+      <div class="two">
+        <label>Action
+          <select id="action_class">
+            <option value="inform">inform – read as information</option>
+            <option value="recommend" selected>recommend – one input to a human</option>
+            <option value="decide">decide – determines a decision</option>
+            <option value="automate">automate – triggers action, no review</option>
+          </select></label>
+        <label>Consequence if wrong
+          <select id="consequence_class">
+            <option value="negligible">negligible</option>
+            <option value="low" selected>low – recoverable</option>
+            <option value="significant">significant – costly / hard to reverse</option>
+            <option value="critical">critical – safety / legal / irreversible</option>
+          </select></label>
+      </div>
+      <div class="derived">Derived risk level: <b id="risk" class="chip">–</b></div>
+      <div class="two">
+        <label>Domain <input id="domain" type="text" value="general"></label>
+        <label>Decision window <span class="hint">optional, e.g. “90 seconds”</span>
+          <input id="decision_window" type="text"></label>
+      </div>
+      <label>Actor <span class="hint">optional – who acts on it</span><input id="actor" type="text"></label>
+    </fieldset>
+
+    <details id="contract">
+      <summary>Domain contract <span class="hint">facts, constraints, boundaries, terms (all optional)</span></summary>
+      <label>Description <textarea id="description" rows="2" placeholder="Background the extractor should know"></textarea></label>
+      <label>Known facts <span class="hint">trusted ground truth, one per line. Only these can make a claim “verified”</span>
+        <textarea id="known_facts" rows="4"></textarea></label>
+      <label>Constraints <span class="hint">things the answer must do, one per line</span>
+        <textarea id="constraints" rows="3"></textarea></label>
+      <label>Boundaries <span class="hint">things the answer must not do, one per line</span>
+        <textarea id="boundaries" rows="3"></textarea></label>
+      <label>Term definitions <span class="hint">one per line: <code>term = definition</code></span>
+        <textarea id="term_definitions" rows="3"></textarea></label>
+      <label>Gemini model <span class="hint">blank = server default</span><input id="model" type="text" placeholder="gemini-2.5-flash"></label>
+    </details>
+
+    <div class="row">
+      <button id="run" type="submit" class="primary">Assess epistemic quality <kbd>Ctrl ⏎</kbd></button>
+      <button id="clear" type="button" class="ghost">Clear</button>
+    </div>
+    <p id="formerr" class="err" role="alert" hidden></p>
+  </form>
+
+  <!-- ===================== OUTPUT ===================== -->
+  <section class="panel" id="out" aria-live="polite">
+    <h2>Assessment</h2>
+    <div id="empty" class="empty">
+      <p>Paste a query and the response it produced, set the risk context, and run.</p>
+      <p class="hint">Athena splits the response into atomic claims, checks each against structural rules, your constraints and boundaries, and any known facts, then issues one verdict for the whole response.</p>
+    </div>
+    <div id="busy" class="busy" hidden><div class="spin" aria-hidden="true"></div>
+      <div><b>Running the pipeline…</b><p class="hint" id="busyhint">decompose → extract → classify → guards → assess → resolve → decide. This makes several model calls; expect 10–60 s.</p></div></div>
+    <div id="result" hidden></div>
+  </section>
+</main>
+
+<footer>
+  <p>The verdict and per-claim states are Athena's own output. “Verified” means consistent with the facts <em>you</em> supplied, not true in the world. Claim extraction and guard judgements are made by an LLM and can be wrong; read the rationale, not just the label.</p>
+</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>
